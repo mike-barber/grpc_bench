@@ -31,6 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("GreeterServer listening on {}", addr);
 
     Server::builder()
+        .concurrency_limit_per_connection(256)
         .add_service(GreeterServer::new(greeter))
         .serve(addr)
         .await?;
