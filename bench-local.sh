@@ -44,18 +44,24 @@ docker pull infoblox/ghz:0.0.1
 # export GRPC_CLIENT_CPUS=9
 # export GRPC_REQUEST_PAYLOAD=100B
 
-#--cpuset-cpus $GRPC_CLIENT_CPUS \
+# assign specific CPUs to client and server so the client does not
+# content with the server for resources.
+ASSIGNED_CPUS_CLIENT="0-$((${GRPC_CLIENT_CPUS} - 1))"
+ASSIGNED_CPUS_SERVER="${GRPC_CLIENT_CPUS}-$((${GRPC_CLIENT_CPUS} + ${GRPC_SERVER_CPUS} - 1))"
+#echo "Assigned server CPUs: ${ASSIGNED_CPUS_SERVER}"
+echo "Assigned client CPUs: ${ASSIGNED_CPUS_CLIENT}"
+
 docker run --name ghz --rm --network=host -v "${PWD}/proto:/proto:ro"\
     -v "${PWD}/payload:/payload:ro"\
+    --cpuset-cpus "${ASSIGNED_CPUS_CLIENT}" \
     --entrypoint=ghz infoblox/ghz:0.0.1 \
     --proto=/proto/helloworld/helloworld.proto \
     --call=helloworld.Greeter.SayHello \
     --insecure \
-    --concurrency=100 \
-    --connections=10 \
+    --concurrency="${GRPC_CLIENT_CONCURRENCY}" \
+    --connections="${GRPC_CLIENT_CONNECTIONS}" \
     --qps="${GRPC_CLIENT_QPS}" \
     --duration "${GRPC_BENCHMARK_DURATION}" \
     --data-file /payload/"${GRPC_REQUEST_PAYLOAD}" \
-    127.0.0.1:50051 
-
+    127.0.0.1:50051
 
